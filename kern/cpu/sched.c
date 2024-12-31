@@ -248,36 +248,44 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	//Your code is here
 	//Comment the following line
 	//panic("Not implemented yet");
+
+	//PRIRR scheduling requires multiple ready queues, one for each priority level - for loop
+	if (numOfPriorities==0 || quantum==0){ //eh el invalid ll quantum?
+		//cprintf("wrong number of priorities or quantum ~mk");
+		return;
+	}
 	num_of_ready_queues = numOfPriorities;
+	//sched_delete_ready_queues(); //this frees any previous allocations, but is it necessary?
 
-	ProcessQueues.env_ready_queues = (struct Env_Queue*) kmalloc(numOfPriorities * sizeof(struct Env_Queue));
+	//sched_init(); -de RR bs
+	//Initialize the Priority RR scheduler by the given number of priorities=number of ready queues
+	ProcessQueues.env_ready_queues= kmalloc(num_of_ready_queues*sizeof(struct Env_Queue));
+	if (ProcessQueues.env_ready_queues!=NULL){ //allocation succeeded
+		quantums= kmalloc(num_of_ready_queues * sizeof(uint8));
+		if (quantums!=NULL){//allocation succeeded
+			quantums[0]=quantum;
+			kclock_set_quantum(quantums[0]);
+			for (uint8 i=0; i<num_of_ready_queues;i++)
+				init_queue(&ProcessQueues.env_ready_queues[i]); //Array of  Ready  queues
 
-	quantums = (uint8*) kmalloc(sizeof(uint8));
-	quantums[0]=quantum;
-	kclock_set_quantum(quantum);
+			sched_set_starv_thresh(starvThresh);
+			init_queue(&ProcessQueues.env_new_queue);
+			init_queue(&ProcessQueues.env_exit_queue);
+			init_spinlock(&ProcessQueues.qlock, "process queues lock");
 
-	starvThreshglobal = starvThresh;
-/*
-	cprintf("Quantum = %d\n", quantums[0]);
-	cprintf("NumOfPriorities = %d\n", num_of_ready_queues);
-	cprintf("starvThresh = %d\n", StarvationThreshold);
-*/
-	for (uint8 i = 0; i < numOfPriorities; i++){
-		acquire_spinlock(&ProcessQueues.qlock);
-//		cprintf("%d\n",i);
-			init_queue(&ProcessQueues.env_ready_queues[i]);
-		release_spinlock(&ProcessQueues.qlock);
+			//=========================================
+			//DON'T CHANGE THESE LINES=================
+			uint16 cnt0 = kclock_read_cnt0_latch() ; //read after write to ensure it's set to the desired value
+			cprintf("*	PRIORITY RR scheduler with initial clock = %d\n", cnt0);
+			mycpu()->scheduler_status = SCH_STOPPED;
+			scheduler_method = SCH_PRIRR;
+			//=========================================
+			//=========================================
+		}
 	}
 
-	//=========================================
-	//DON'T CHANGE THESE LINES=================
-	uint16 cnt0 = kclock_read_cnt0_latch() ; //read after write to ensure it's set to the desired value
-	cprintf("*	PRIORITY RR scheduler with initial clock = %d\n", cnt0);
-	mycpu()->scheduler_status = SCH_STOPPED;
-	scheduler_method = SCH_PRIRR;
-	//=========================================
-	//=========================================
 }
+
 
 //=========================
 // [7] RR Scheduler:
@@ -360,30 +368,36 @@ struct Env* fos_scheduler_PRIRR()
 	//TODO: [PROJECT'24.MS3 - #08] [3] PRIORITY RR Scheduler - fos_scheduler_PRIRR
 	//Your code is here
 	//Comment the following line
-
 	//panic("Not implemented yet");
 
-
-	//mycpu()->scheduler_status = SCH_STARTED;
-	struct Env* myEnv =get_cpu_proc();
-	if(myEnv != NULL)
-	{
-		sched_insert_ready(myEnv);
-	}
-	struct Env* next_environment=NULL;
-	for(int i = 0; i < num_of_ready_queues;i++)
-	{
-		if(ProcessQueues.env_ready_queues[i].size != 0)
-		{
-			kclock_set_quantum(quantums[0]);
-			next_environment=dequeue(&ProcessQueues.env_ready_queues[i]);
-			set_cpu_proc(next_environment);
-			return next_environment;
-		}
-	}
-
-	return NULL;
+	struct Env* curEnv= get_cpu_proc();
+	//acquire(&ProcessQueues.qlock); //ytshal wla la as it is already expected to be held at the call of this fn?
+	    if (curEnv!=NULL) {
+	    	//any proper extra initialization required?
+	    	//This may involve recalculating the priority if aging
+	    	//or starvation threshold mechanisms are used
+	    	sched_insert_ready(curEnv);
+	    	//Reset/Decrement Quantum Remaining (if applicable)
+	    	//For Round Robin or PRIRR, if the process was preempted because its quantum expired:
+	    	//Reset its quantum to the default value for its priority queue:
+	    	//Resetting its quantum if it has expired////////////////////////
+	    	//If the process still has some time remaining in its quantum:
+	    	//Save the remaining quantum time, so it can resume where it left off -check this case later
+	    	//curEnv->
+	    }
+	    struct Env* nextEnv=NULL;
+	    for (int queueIndex=0; queueIndex<num_of_ready_queues; queueIndex++) {
+	    	if (queue_size(&ProcessQueues.env_ready_queues[queueIndex])!=0){
+	    	//if (!LIST_EMPTY(&(ProcessQueues.env_ready_queues[queueIndex]))){ //both s7
+			    nextEnv= dequeue(&ProcessQueues.env_ready_queues[queueIndex]);
+			    set_cpu_proc(nextEnv);
+			    break;
+	    	}
+	    }
+	    kclock_set_quantum(quantums[0]);
+	    return nextEnv;
 }
+
 
 //========================================
 // [11] Clock Interrupt Handler
