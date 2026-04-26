@@ -52,10 +52,10 @@ System stability was verified through a comprehensive suite of automated tests, 
 - **Performance Benchmarking**: Efficiency and speed analysis under high load.
 - **Robustness Testing**: Edge-case validation using both pre-validated (SEEN) and hidden (UNSEEN) faculty-provided test scenarios
 
-## Authors
+## Contributors
 - [Mohamed Medhat](https://github.com/Mohammed-Medhat)
 - [Yasser Reda](https://github.com/)
 - [Mariam Khaled](https://github.com/stanmicro9)
 - [Salah Eldeen Tarek](https://github.com/inki69)
 - [Mariam Ahmed](https://github.com/Mariamahmadd)
-- [Youssof Othman](https://github.com/)
+- [Youssof Othman](https://github.com/3ossjunior)
