@@ -54,7 +54,7 @@ System stability was verified through a comprehensive suite of automated tests, 
 
 ## Contributors
 - [Mohamed Medhat](https://github.com/Mohammed-Medhat)
-- [Yasser Reda](https://github.com/)
+- [Yasser Reda](https://github.com/Sparkk505)
 - [Mariam Khaled](https://github.com/stanmicro9)
 - [Salah Eldeen Tarek](https://github.com/inki69)
 - [Mariam Ahmed](https://github.com/Mariamahmadd)
